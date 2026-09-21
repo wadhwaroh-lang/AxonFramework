@@ -133,6 +133,8 @@ This condition is what the `CriteriaResolver` ultimately produces when loading a
 Used when streaming events for event processors.
 It combines an `EventCriteria` with a `TrackingToken` that marks the position to start streaming from.
 Unlike sourcing (which retrieves a bounded sequence), streaming is continuous and open-ended.
+The numeric position on that token is implementation-specific: Axon Server starts the global stream at `0`, whereas JPA implementations typically start at `1`.
+See xref:event-processors/streaming.adoc#tracking_tokens[tracking tokens] for details.
 +
 The criteria defaults to matching any tag, making it suitable for processors that need to observe all events rather than a specific entity stream.
 

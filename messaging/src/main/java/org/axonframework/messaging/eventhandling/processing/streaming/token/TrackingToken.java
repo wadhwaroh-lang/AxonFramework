@@ -122,6 +122,10 @@ public interface TrackingToken {
     /**
      * Return the estimated relative position this token represents. In case no estimation can be given an
      * {@code OptionalLong.empty()} will be returned.
+     * <p>
+     * The numeric value is implementation-specific. Axon Server starts the global stream at {@code 0}, whereas
+     * JPA-backed stores typically start at {@code 1}. Do not treat the value as a portable index across event store
+     * implementations.
      *
      * @return the estimated relative position of this token
      */

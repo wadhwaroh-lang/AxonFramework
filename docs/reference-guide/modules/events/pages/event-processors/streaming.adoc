@@ -270,6 +270,14 @@ It's this token that:
 . specifies the position of the event on the overall stream, and
 . is used by the Streaming Processor to open the event stream at the desired position on start-up.
 
+[WARNING]
+.Event store positions are implementation-specific
+====
+The numeric value of a `TrackingToken` position is not a universal index.
+Axon Server starts the global stream at `0`, whereas JPA implementations typically start at `1`.
+Do not assume a given position refers to the same event after switching storage engines, and do not hard-code positions across environments that use different event stores.
+====
+
 Using tokens gives the Streaming Event Processor several benefits, like:
 
 * Being able to reopen the stream at any later point, picking up where it left off with the last event.
@@ -1147,7 +1155,8 @@ The `StreamableEventSource`'s <<initial_token,`createTokenAt(Instant)`>> method 
 
 If creating tokens based on time is not sufficient, but creating tokens based on the exact position is something that is more convenient, you could create a `TrackingToken` providing the position and give it to `resetTokens(TrackingToken startPosition)` or
 `resetTokens(TrackingToken startPosition, R resetContext)`.
-The concrete implementation of `TrackingToken` to provide depends on the `TokenStore` being used.
+The concrete implementation of `TrackingToken` to provide depends on the event store being used.
+See <<tracking_tokens,Event store positions are implementation-specific>> before copying a numeric position between Axon Server and a JPA-backed store.
 Or, if you want to use the token source for your Streaming Processor to construct the right type of token in one go, you can use the  `resetTokens(Function<TrackingTokenSource>, CompletableFuture<TrackingToken>> initialTrackingTokenSupplier)` or
 `resetTokens(Function<TrackingTokenSource>, CompletableFuture<TrackingToken>> initialTrackingTokenSupplier, R resetContext)` methods.
 
