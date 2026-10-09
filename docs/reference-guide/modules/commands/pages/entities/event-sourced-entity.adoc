@@ -24,6 +24,7 @@ include::example$commands/entities/eventsourcedentity/EnrollStudentCommand.java[
 <1> Axon reads this field to load the correct entity instance before invoking the handler.
 Note that this is not required on static creational command handlers, since no entity exists yet at that point.
 Hence, there is no entity to target yet!
+When the identifier is not on the payload, or you need one resolver for every entity, see xref:commands:entities/entity-id-resolver.adoc[Entity identifier resolution].
 
 Axon also needs to know which events belong to this entity's stream.
 Mark the identifier field on your events with `@EventTag`, and set `tagKey` on the entity annotation to the same key:

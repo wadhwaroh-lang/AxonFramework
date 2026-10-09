@@ -1,0 +1,148 @@
+= Entity Identifier Resolution
+:navtitle: Entity identifier resolution
+
+An `EntityIdResolver` extracts the identifier of the entity a command should load.
+Axon invokes it before command handling, then uses the resolved identifier with the `StateManager` to load or create that instance.
+
+An `EntityIdResolverDefinition` is the factory that constructs the resolver used by an annotation-based event-sourced entity.
+The resolver answers "which instance?"; the definition answers "how should this entity type construct that resolver?"
+
+[#default_resolution]
+== Default resolution from the payload
+
+The default resolver is `AnnotationBasedEntityIdResolver`.
+It inspects the command payload for a field or method annotated with `@TargetEntityId`.
+Exactly one distinct non-null value must be present; otherwise Axon throws an `EntityIdResolutionException`.
+
+[source,java]
+----
+include::example$commands/entities/entityidresolver/EnrollStudentCommand.java[tag=target-entity-id,indent=0]
+----
+
+<1> The default resolver reads this member to decide which entity instance to load.
+
+This is the form used by `@EventSourcedEntity`, `@EventSourced`, and `@InjectEntity` when you do not customize resolution.
+
+On annotation-based event-sourced entities, the module wraps that resolver so the payload is converted to the handler's expected type first.
+You do not configure that wrapper yourself.
+
+[#built_in_resolvers]
+== Built-in resolvers
+
+Use a different `EntityIdResolver` when the identifier is not on a `@TargetEntityId` member, or when a single command type can carry it in more than one place.
+
+`PropertyBasedEntityIdResolver`::
+Reads a named field or accessor from the payload.
+This is what `@InjectEntity(idProperty = "...")` constructs for you.
+
+`MetadataEntityIdResolver`::
+Reads a metadata key instead of the payload.
+Use this when the identifier is out-of-band: the payload must not carry it, or the message was translated from another model.
+Metadata values are strings.
+`MetadataEntityIdResolver.forKey(String)` therefore resolves a `String`.
+For another identifier type, use `MetadataEntityIdResolver.forKey(String, Class, Converter)` so the string can be converted.
+
+`FallbackEntityIdResolver`::
+Invokes a primary resolver first, and a secondary resolver only when the primary throws `EntityIdResolutionException`.
+Both "no identifier" and "several identifiers" fall through.
+
+[source,java]
+----
+include::example$commands/entities/entityidresolver/PayloadThenMetadataResolver.java[tag=fallback-resolver,indent=0]
+----
+
+<1> Try `@TargetEntityId` on the payload first.
+<2> If that fails, read the `targetEntityId` metadata entry.
+
+You can implement `EntityIdResolver` yourself when the identifier is computed from several fields or requires a lookup.
+
+[#definitions]
+== Definitions and configuration
+
+`EntityIdResolverDefinition` creates the resolver for a given entity type and identifier type.
+Annotation-based event-sourced entities (`@EventSourcedEntity` and the Spring `@EventSourced` alias) use a definition.
+Declarative `EventSourcedEntityModule` registration sets an `EntityIdResolver` directly and does not consult a definition.
+
+The annotation default is `DefaultEntityIdResolverDefinition`, which is an `AnnotationBasedEntityIdResolverDefinition`.
+That default builds an `AnnotationBasedEntityIdResolver`.
+
+A custom definition is the place to compose fallback and metadata resolution for every command that targets that entity:
+
+[source,java]
+----
+include::example$commands/entities/entityidresolver/PayloadThenMetadataEntityIdResolverDefinition.java[tag=resolver-definition,indent=0]
+----
+
+<1> Payload first, through `@TargetEntityId`.
+<2> Metadata second, converting the string value to the entity's identifier type.
+
+[#configuration_wide_override]
+=== Configuration-wide override
+
+The configuration-wide override applies to **annotation-based event-sourced entities only**.
+It does not apply to declarative modules, state-stored entities, or `@InjectEntity`.
+
+When `@EventSourcedEntity` / `@EventSourced` leaves `entityIdResolverDefinition` at its default, Axon uses an `EntityIdResolverDefinition` component from the configuration if one is registered.
+If none is registered, it constructs `AnnotationBasedEntityIdResolverDefinition`.
+
+Register that component once to change the default for every annotation-based event-sourced entity in the application:
+
+[tabs]
+====
+Configuration API::
++
+[source,java]
+----
+include::example$commands/entities/entityidresolver/ConfigurationApiOverride.java[tag=configuration-override,indent=0]
+----
+
+Spring Boot::
++
+[source,java]
+----
+include::example$commands/entities/entityidresolver/SpringOverride.java[tag=spring-override,indent=0]
+----
+====
+
+An explicit `entityIdResolverDefinition` on the entity annotation always wins, including an explicit `AnnotationBasedEntityIdResolverDefinition`.
+Use that when one entity must keep payload-only resolution after you register a configuration-wide override.
+
+[source,java]
+----
+include::example$commands/entities/entityidresolver/CourseEntity.java[tag=explicit-definition,indent=0]
+----
+
+<1> This entity ignores the configuration-wide definition and keeps the annotation-based payload resolver.
+
+[#per_entity]
+=== Per-entity definition
+
+To change resolution for one entity without a configuration-wide default, set `entityIdResolverDefinition` on that entity:
+
+[source,java]
+----
+include::example$commands/entities/entityidresolver/CourseEntity.java[tag=custom-definition,indent=0]
+----
+
+[#declarative]
+=== Declarative modules
+
+A declarative module supplies the resolver on the module builder.
+That registration does not look up `EntityIdResolverDefinition` from the configuration.
+
+[source,java]
+----
+include::example$commands/entities/entityidresolver/DeclarativeEntityIdResolver.java[tag=declarative-resolver,indent=0]
+----
+
+[#inject_entity]
+== `@InjectEntity`
+
+`@InjectEntity` resolves the identifier independently of the entity module's `EntityIdResolverDefinition`.
+It uses, in order:
+
+. `idResolver`, a zero-argument `EntityIdResolver` implementation, when set
+. `idProperty`, a `PropertyBasedEntityIdResolver` for that property name, when set
+. `AnnotationBasedEntityIdResolver` otherwise
+
+See xref:commands:entities/stateful-command-handler.adoc#resolve_entity_id[Resolving the entity identifier] on the stateful command handler page.

@@ -5,6 +5,7 @@
 ** xref:commands:entities/index.adoc[]
 *** xref:commands:entities/event-sourced-entity.adoc[]
 **** xref:commands:entities/entity-creator.adoc[]
+**** xref:commands:entities/entity-id-resolver.adoc[]
 *** xref:commands:entities/stateful-command-handler.adoc[]
 *** xref:commands:entities/entity-hierarchies.adoc[]
 *** xref:commands:entities/entity-polymorphism.adoc[]

@@ -123,6 +123,12 @@ public @interface EventSourced {
      * implementation that resolves the entity id based on the {@link TargetEntityId} annotation on a payload field or
      * method. Conversion of the payload to the representation wanted by the entity is applied by the module before
      * resolution.
+     * <p>
+     * When this attribute is left at its default, a {@link EntityIdResolverDefinition} registered on the
+     * {@link org.axonframework.common.configuration.Configuration} replaces that default for every annotation-based
+     * event-sourced entity. Naming any other definition here, including
+     * {@link AnnotationBasedEntityIdResolverDefinition}, opts that entity out of the configuration-wide override. The
+     * override applies to annotation-based event-sourced entities only.
      *
      * @return the definition to construct an {@link EntityIdResolverDefinition}
      */
